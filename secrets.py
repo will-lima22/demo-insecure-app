@@ -2,5 +2,5 @@
 
 API_KEY = "12345-ABCDE-SUPER-SECRET"
 DB_PASSWORD = "Password123!"
-TOKEN = "ghp_exampleSuperToken123456"
+TOKEN = "ghp_exampleSuperToken123456X"
 SECRET_KEY = "sk_live_abcdefghijklmnopqrstuvxz"
