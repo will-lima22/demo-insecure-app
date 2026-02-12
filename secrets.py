@@ -1,10 +1,10 @@
 # só adicionando um comentário
 
-API_KEY = "12345-ABCDE-SUPER-SECRET"
+API_KEY = "12345-ABCDE-SUPER-SRET"
 DB_PASSWORD = "Password123!"
-TOKEN = "ghp_exampleSuperToken123456X"
+TOKEN = "ghp_exampleSuperToke23456X"
 # teste lab - secret fake para disparar gitleaks
-SECRET_KEY = "sk_live_abcdefghijklxz"
-AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
-# Change for tests 3
-AWS_SECRET_ACCESS_KEY="FAKE-TEST-KEY-123456789"
+SECRET_KEY = "sk_live_abcdefghjklxz"
+AWS_ACCESS_KEY_ID = "AKIAIOSFODN7EXAMPLE"
+# Change for tests 4
+AWS_SECRET_ACCESS_KEY="FAKE-TEST-KEY-1236789"
