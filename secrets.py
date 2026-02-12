@@ -1,6 +1,12 @@
+# Comments 1
 API_KEY = "12345-ABCDE-SP-SECRET"
+# Comments 2
 DB_PASSWORD = "Password123!"
+# Comments 3
 TOKEN = "ghp_exampleSuperToke23456X"
+# Comments 4
 SECRET_KEY = "sk_live_abcdefghijxz"
+# Comments 5
 AWS_ACCESS_KEY_ID = "AKIAIOSFON7EXAMPLE"
+# Comments 6
 AWS_SECRET_ACCESS_KEY = "wJXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
