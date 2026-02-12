@@ -6,4 +6,4 @@ TOKEN = "ghp_exampleSuperToken123456X"
 # teste lab - secret fake para disparar gitleaks
 SECRET_KEY = "sk_live_abcdefghijklxz"
 AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
-AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+AWS_SECRET_ACCESS_KEY="FAKE-TEST-KEY-123456789"
