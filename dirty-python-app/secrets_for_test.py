@@ -1,6 +1,4 @@
 # dirty-python-app/secrets_for_test.py
-# ⚠️ TESTE CONTROLADO – TOKEN REAL (será revogado após o teste)
+# FAKE GitHub PAT – usado apenas para teste de detecção (TruffleHog)
 
-GITHUB_TOKEN = "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"
-
-print("TruffleHog lab: GitHub token presente apenas para verificação ativa")
+GITHUB_TOKEN = "github_pat_1AbC_dE9FghI_JkLmN0pQrST_uvWXyZ12_34"
