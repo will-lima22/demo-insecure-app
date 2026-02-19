@@ -32,15 +32,18 @@ jobs:
           severity: MEDIUM,HIGH,CRITICAL
           format: json
           output: trivy-fs-results.json
-          exit-code: '0'
+          exit-code: "0"
 
       - name: Import Trivy scan into DefectDojo (auto-create context)
         env:
           DD_URL: ${{ secrets.DD_URL }}
+          DD_TOKEN: ${{ secrets.DD_TOKEN }}
           DD_PRODUCT_NAME: ${{ inputs.DD_PRODUCT_NAME }}
           DD_ENGAGEMENT_NAME: ${{ inputs.DD_ENGAGEMENT_NAME }}
-          DD_TOKEN: ${{ secrets.DD_TOKEN }}
         run: |
+          set -euo pipefail
+          DD_URL="${DD_URL%/}"
+
           curl -sS -X POST "${DD_URL}/api/v2/import-scan/" \
             -H "Authorization: Token ${DD_TOKEN}" \
             -H "Accept: application/json" \

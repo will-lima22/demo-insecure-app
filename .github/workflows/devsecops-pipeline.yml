@@ -8,17 +8,19 @@ on:
 jobs:
   secrets-trufflehog:
     uses: ./.github/workflows/secret-scan-trufflehog.yml
-    secrets: inherit
-
-  sca-trivyfs:
-    uses: ./.github/workflows/sca-trivyfs.yml
-
     secrets:
-      DD_TOKEN: ${{ secrets.DD_TOKEN }}
       DD_URL: ${{ secrets.DD_URL }}
-
+      DD_TOKEN: ${{ secrets.DD_TOKEN }}
     with:
       DD_PRODUCT_NAME: ${{ github.event.repository.name }}
       DD_ENGAGEMENT_NAME: ci-${{ github.event.repository.name }}
 
+  sca-trivyfs:
+    uses: ./.github/workflows/sca-trivyfs.yml
+    secrets:
+      DD_URL: ${{ secrets.DD_URL }}
+      DD_TOKEN: ${{ secrets.DD_TOKEN }}
+    with:
+      DD_PRODUCT_NAME: ${{ github.event.repository.name }}
+      DD_ENGAGEMENT_NAME: ci-${{ github.event.repository.name }}
     needs: [secrets-trufflehog]
