@@ -1,4 +1,4 @@
-# Dirty Python App
+### Dirty Python App
 
 Aplicação propositalmente vulnerável para testes de esteira DevSecOps.
 
