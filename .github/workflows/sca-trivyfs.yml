@@ -1,0 +1,58 @@
+name: SCA - Trivy FS -> DefectDojo
+
+on:
+  workflow_call:
+    secrets:
+      DD_TOKEN:
+        required: true
+    inputs:
+      DD_URL:
+        required: true
+        type: string
+      DD_PRODUCT_NAME:
+        required: true
+        type: string
+      DD_ENGAGEMENT_NAME:
+        required: true
+        type: string
+
+jobs:
+  trivyfs-and-import:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          version: latest
+
+      - name: Run Trivy FS (vuln only) -> JSON
+        run: |
+          trivy fs . \
+            --scanners vuln \
+            --severity MEDIUM,HIGH,CRITICAL \
+            --format json \
+            --output trivy-fs-results.json \
+            --exit-code 0
+
+      - name: Import Trivy scan into DefectDojo (auto-create context)
+        env:
+          DD_URL: ${{ inputs.DD_URL }}
+          DD_PRODUCT_NAME: ${{ inputs.DD_PRODUCT_NAME }}
+          DD_ENGAGEMENT_NAME: ${{ inputs.DD_ENGAGEMENT_NAME }}
+          DD_TOKEN: ${{ secrets.DD_TOKEN }}
+        run: |
+          curl -sS -X POST "${DD_URL}/api/v2/import-scan/" \
+            -H "Authorization: Token ${DD_TOKEN}" \
+            -H "Accept: application/json" \
+            -F "scan_type=Trivy Scan" \
+            -F "product_name=${DD_PRODUCT_NAME}" \
+            -F "engagement_name=${DD_ENGAGEMENT_NAME}" \
+            -F "auto_create_context=true" \
+            -F "active=true" \
+            -F "verified=false" \
+            -F "close_old_findings=false" \
+            -F "file=@trivy-fs-results.json"
