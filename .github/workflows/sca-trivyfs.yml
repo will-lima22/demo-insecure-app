@@ -5,10 +5,9 @@ on:
     secrets:
       DD_TOKEN:
         required: true
-    inputs:
       DD_URL:
         required: true
-        type: string
+    inputs:
       DD_PRODUCT_NAME:
         required: true
         type: string
@@ -37,7 +36,7 @@ jobs:
 
       - name: Import Trivy scan into DefectDojo (auto-create context)
         env:
-          DD_URL: ${{ inputs.DD_URL }}
+          DD_URL: ${{ secrets.DD_URL }}
           DD_PRODUCT_NAME: ${{ inputs.DD_PRODUCT_NAME }}
           DD_ENGAGEMENT_NAME: ${{ inputs.DD_ENGAGEMENT_NAME }}
           DD_TOKEN: ${{ secrets.DD_TOKEN }}
