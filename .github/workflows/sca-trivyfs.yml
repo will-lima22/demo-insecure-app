@@ -24,19 +24,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Trivy
+      - name: Run Trivy FS (vuln only) -> JSON
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          version: latest
-
-      - name: Run Trivy FS (vuln only) -> JSON
-        run: |
-          trivy fs . \
-            --scanners vuln \
-            --severity MEDIUM,HIGH,CRITICAL \
-            --format json \
-            --output trivy-fs-results.json \
-            --exit-code 0
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: MEDIUM,HIGH,CRITICAL
+          format: json
+          output: trivy-fs-results.json
+          exit-code: '0'
 
       - name: Import Trivy scan into DefectDojo (auto-create context)
         env:
