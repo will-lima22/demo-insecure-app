@@ -3,9 +3,11 @@ name: SCA - Trivy FS -> DefectDojo
 on:
   workflow_call:
     secrets:
+      DD_URL:
+        required: true
       DD_TOKEN:
         required: true
-      DD_URL:
+      DD_PRODUCT_TYPE_NAME:
         required: true
     inputs:
       DD_PRODUCT_NAME:
@@ -34,10 +36,38 @@ jobs:
           output: trivy-fs-results.json
           exit-code: "0"
 
-      - name: Import Trivy scan into DefectDojo (auto-create context)
+      - name: Ensure Product Type exists (idempotent)
+        shell: bash
         env:
           DD_URL: ${{ secrets.DD_URL }}
           DD_TOKEN: ${{ secrets.DD_TOKEN }}
+          DD_PRODUCT_TYPE_NAME: ${{ secrets.DD_PRODUCT_TYPE_NAME }}
+        run: |
+          set -euo pipefail
+          DD_URL="${DD_URL%/}"
+
+          EXISTS=$(curl -sS "${DD_URL}/api/v2/product_types/?name=${DD_PRODUCT_TYPE_NAME}" \
+            -H "Authorization: Token ${DD_TOKEN}" \
+            -H "Accept: application/json" | python -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('results',[])))")
+
+          if [ "${EXISTS}" -gt 0 ]; then
+            echo "Product Type OK: ${DD_PRODUCT_TYPE_NAME}"
+            exit 0
+          fi
+
+          echo "Creating Product Type: ${DD_PRODUCT_TYPE_NAME}"
+          curl -sS -X POST "${DD_URL}/api/v2/product_types/" \
+            -H "Authorization: Token ${DD_TOKEN}" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            --data "{\"name\":\"${DD_PRODUCT_TYPE_NAME}\",\"description\":\"Product Type criado automaticamente para CI/CD (DevSecOps Lab)\"}" >/dev/null
+
+      - name: Import Trivy scan into DefectDojo (auto-create context)
+        shell: bash
+        env:
+          DD_URL: ${{ secrets.DD_URL }}
+          DD_TOKEN: ${{ secrets.DD_TOKEN }}
+          DD_PRODUCT_TYPE_NAME: ${{ secrets.DD_PRODUCT_TYPE_NAME }}
           DD_PRODUCT_NAME: ${{ inputs.DD_PRODUCT_NAME }}
           DD_ENGAGEMENT_NAME: ${{ inputs.DD_ENGAGEMENT_NAME }}
         run: |
@@ -48,6 +78,7 @@ jobs:
             -H "Authorization: Token ${DD_TOKEN}" \
             -H "Accept: application/json" \
             -F "scan_type=Trivy Scan" \
+            -F "product_type_name=${DD_PRODUCT_TYPE_NAME}" \
             -F "product_name=${DD_PRODUCT_NAME}" \
             -F "engagement_name=${DD_ENGAGEMENT_NAME}" \
             -F "auto_create_context=true" \
