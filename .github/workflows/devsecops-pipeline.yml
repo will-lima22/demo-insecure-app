@@ -10,10 +10,6 @@ jobs:
     uses: ./.github/workflows/secret-scan-trufflehog.yml
     secrets: inherit
 
-  # secrets-gitleaks:
-  #   uses: ./.github/workflows/secret-scan-gitleaks.yml
-  #   secrets: inherit
-
   sca-trivyfs:
     uses: ./.github/workflows/sca-trivyfs.yml
 
