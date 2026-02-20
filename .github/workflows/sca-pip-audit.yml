@@ -45,11 +45,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install pip-audit
 
-          - name: Run pip-audit -> JSON (monitoring)
-          shell: bash
-          env:
-            REQ_FILE: ${{ inputs.REQUIREMENTS_FILE }}
-          run: |
+      - name: Run pip-audit -> JSON (monitoring)
+        shell: bash
+        env:
+          REQ_FILE: ${{ inputs.REQUIREMENTS_FILE }}
+        run: |
             set -euo pipefail
             test -f "${REQ_FILE}"
   
