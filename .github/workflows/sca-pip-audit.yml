@@ -45,15 +45,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install pip-audit
 
-      - name: Run pip-audit -> JSON
-        shell: bash
-        env:
-          REQ_FILE: ${{ inputs.REQUIREMENTS_FILE }}
-        run: |
-          set -euo pipefail
-          test -f "${REQ_FILE}"
-          pip-audit -r "${REQ_FILE}" -f json -o pip-audit-results.json --exit-code 0
-          test -s pip-audit-results.json
+          - name: Run pip-audit -> JSON (monitoring)
+          shell: bash
+          env:
+            REQ_FILE: ${{ inputs.REQUIREMENTS_FILE }}
+          run: |
+            set -euo pipefail
+            test -f "${REQ_FILE}"
+  
+            set +e
+            pip-audit -r "${REQ_FILE}" -f json -o pip-audit-results.json
+            RC=$?
+            set -e
+  
+            echo "pip-audit exit code: ${RC} (0=sem findings, 1=findings, >1=erro)"
+  
+            # Se RC > 1, é erro de execução (rede, parsing, etc.) -> falha o job
+            if [ "${RC}" -gt 1 ]; then
+              echo "pip-audit falhou com erro real (exit > 1)."
+              exit "${RC}"
+            fi
+  
+            test -s pip-audit-results.json
 
       - name: Ensure Product Type exists (idempotent)
         shell: bash
