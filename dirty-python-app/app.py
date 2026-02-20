@@ -12,7 +12,7 @@ app.config["DEBUG"] = True
 def home():
     return "Aplicação extremamente insegura 😈"
 
-# Execução insegura de comando
+# Execução insegura de comando #
 @app.route("/ping")
 def ping():
     host = request.args.get("host")
