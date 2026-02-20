@@ -5,18 +5,18 @@ from config import *
 
 app = Flask(__name__)
 
-# Debug ligado em produção (vulnerável) #
+# Debug ligado em produção (vulnerável)
 app.config["DEBUG"] = True
 
 @app.route("/")
 def home():
     return "Aplicação extremamente insegura 😈"
 
-# Execução insegura de comando #
+# Execução insegura de comando
 @app.route("/ping")
 def ping():
     host = request.args.get("host")
-    return subprocess.getoutput(f"ping -c 1 {host}")  # Command Injection #
+    return subprocess.getoutput(f"ping -c 1 {host}")  # Command Injection
 
 # Uso inseguro de eval
 @app.route("/calc")
