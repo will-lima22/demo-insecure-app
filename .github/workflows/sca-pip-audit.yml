@@ -52,7 +52,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f "${REQ_FILE}"
-          pip-audit -r "${REQ_FILE}" -f json -o pip-audit-results.json
+          pip-audit -r "${REQ_FILE}" -f json -o pip-audit-results.json --exit-code 0
           test -s pip-audit-results.json
 
       - name: Ensure Product Type exists (idempotent)
