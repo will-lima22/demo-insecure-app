@@ -1,0 +1,115 @@
+name: SAST - Semgrep
+
+on:
+  workflow_call:
+    secrets:
+      DD_URL:
+        required: true
+      DD_TOKEN:
+        required: true
+      DD_PRODUCT_TYPE_NAME:
+        required: true
+    inputs:
+      DD_PRODUCT_NAME:
+        required: true
+        type: string
+      DD_ENGAGEMENT_NAME:
+        required: true
+        type: string
+      TARGET_PATH:
+        required: false
+        type: string
+        default: "dirty-python-app"
+      SEMGREP_CONFIG:
+        required: false
+        type: string
+        default: "p/ci"
+
+jobs:
+  semgrep-and-import:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Semgrep
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --upgrade pip
+          pip install semgrep
+          semgrep --version
+
+      - name: Run Semgrep -> JSON (monitoring mode)
+        shell: bash
+        env:
+          TARGET_PATH: ${{ inputs.TARGET_PATH }}
+          SEMGREP_CONFIG: ${{ inputs.SEMGREP_CONFIG }}
+        run: |
+          set -euo pipefail
+
+          # "Monitoring mode": não falhar pipeline por findings.
+          # (Semgrep normalmente retorna 0; mantemos sem --error/--strict)
+          semgrep scan \
+            --config="${SEMGREP_CONFIG}" \
+            --json \
+            --output semgrep-results.json \
+            "${TARGET_PATH}" || true
+
+          # Garante arquivo não vazio para import (mesmo se 0 findings, Semgrep tende a gerar JSON)
+          test -f semgrep-results.json
+          test -s semgrep-results.json
+
+      - name: Ensure Product Type exists (idempotent)
+        shell: bash
+        env:
+          DD_URL: ${{ secrets.DD_URL }}
+          DD_TOKEN: ${{ secrets.DD_TOKEN }}
+          DD_PRODUCT_TYPE_NAME: ${{ secrets.DD_PRODUCT_TYPE_NAME }}
+        run: |
+          set -euo pipefail
+          DD_URL="${DD_URL%/}"
+
+          EXISTS=$(curl -sS -G "${DD_URL}/api/v2/product_types/" \
+            -H "Authorization: Token ${DD_TOKEN}" \
+            -H "Accept: application/json" \
+            --data-urlencode "name=${DD_PRODUCT_TYPE_NAME}" \
+            | python -c "import sys,json; d=json.load(sys.stdin); print(len(d.get('results',[])))")
+
+          if [ "${EXISTS}" -gt 0 ]; then
+            echo "Product Type OK: ${DD_PRODUCT_TYPE_NAME}"
+            exit 0
+          fi
+
+          echo "Creating Product Type: ${DD_PRODUCT_TYPE_NAME}"
+          curl -sS -f -X POST "${DD_URL}/api/v2/product_types/" \
+            -H "Authorization: Token ${DD_TOKEN}" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            --data "{\"name\":\"${DD_PRODUCT_TYPE_NAME}\",\"description\":\"Product Type criado automaticamente para CI/CD (DevSecOps Lab)\"}" \
+            >/dev/null
+
+      - name: Ensure Product exists (with audit Description)
+        shell: bash
+        env:
+          DD_URL: ${{ secrets.DD_URL }}
+          DD_TOKEN: ${{ secrets.DD_TOKEN }}
+          DD_PRODUCT_TYPE_NAME: ${{ secrets.DD_PRODUCT_TYPE_NAME }}
+          DD_PRODUCT_NAME: ${{ inputs.DD_PRODUCT_NAME }}
+          GH_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          GH_RUN_ID: ${{ github.run_id }}
+          GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_REF_NAME: ${{ github.ref_name }}
+          GH_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          DD_URL="${DD_URL%/}"
+
+          # Product Type ID
+          PT_JSON=$(curl -sS -G "${DD_URL}/api/v2/product_types/" \
+            -H "Authorization: Token ${DD_TOKEN}" \
+            -H "Accept: application/json" \
+            --data-urlencode "name=${DD_PRODUCT_TYPE_NAME}")
+

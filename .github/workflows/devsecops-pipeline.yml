@@ -39,3 +39,16 @@ jobs:
       REQUIREMENTS_FILE: dirty-python-app/requirements.txt
       PYTHON_VERSION: "3.12"
     needs: [sca-trivyfs]
+
+  sast-semgrep:
+    uses: ./.github/workflows/sast-semgrep.yml
+    secrets:
+      DD_URL: ${{ secrets.DD_URL }}
+      DD_TOKEN: ${{ secrets.DD_TOKEN }}
+      DD_PRODUCT_TYPE_NAME: ${{ secrets.DD_PRODUCT_TYPE_NAME }}
+    with:
+      DD_PRODUCT_NAME: ${{ github.event.repository.name }}
+      DD_ENGAGEMENT_NAME: ci-${{ github.event.repository.name }}
+      TARGET_PATH: dirty-python-app
+      SEMGREP_CONFIG: p/ci
+    needs: [sca-pip-audit]
