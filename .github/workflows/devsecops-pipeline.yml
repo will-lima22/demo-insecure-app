@@ -52,3 +52,11 @@ jobs:
       TARGET_PATH: dirty-python-app
       SEMGREP_CONFIG: p/ci
     needs: [sca-pip-audit]
+
+  sast-sonarqube:
+    uses: ./.github/workflows/sast-sonarqube.yml
+    with:
+      SQ_URL: ${{ vars.SQ_URL }}
+    secrets:
+      SQ_TOKEN: ${{ secrets.SQ_TOKEN }}
+    needs: [sast-semgrep]
