@@ -55,8 +55,7 @@ jobs:
 
   sast-sonarqube:
     uses: ./.github/workflows/sast-sonarqube.yml
-    with:
-      SQ_URL: ${{ vars.SQ_URL }}
     secrets:
+      SQ_URL: ${{ secrets.SQ_URL }}
       SQ_TOKEN: ${{ secrets.SQ_TOKEN }}
     needs: [sast-semgrep]

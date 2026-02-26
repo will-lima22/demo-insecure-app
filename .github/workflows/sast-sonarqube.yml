@@ -11,17 +11,10 @@ on:
 jobs:
   sonarqube-scan:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Debug Sonar URL (safe)
-        run: |
-          if [ -z "${{ secrets.SQ_URL }}" ]; then
-            echo "SQ_URL está vazio"
-            exit 1
-          fi
-          echo "SQ_URL definido (não exibindo por segurança)"
 
       - name: SonarQube Scan
         run: |
