@@ -2,26 +2,29 @@ name: SAST - SonarQube
 
 on:
   workflow_call:
-    secrets:
-      SQ_TOKEN:
-        required: true
     inputs:
       SQ_URL:
         required: true
         type: string
+    secrets:
+      SQ_TOKEN:
+        required: true
 
 jobs:
   sonarqube-scan:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Debug Sonar URL (safe)
+        run: |
+          echo "SQ_URL=${{ inputs.SQ_URL }}"
 
       - name: SonarQube Scan
         run: |
           docker run --rm \
             -e SONAR_HOST_URL="${{ inputs.SQ_URL }}" \
             -e SONAR_TOKEN="${{ secrets.SQ_TOKEN }}" \
-            -v "$PWD:/usr/src" \
+            -v "$PWD/dirty-python-app:/usr/src" \
             sonarsource/sonar-scanner-cli
