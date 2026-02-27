@@ -2,6 +2,10 @@ name: SAST - SonarQube
 
 on:
   workflow_call:
+    inputs:
+      TARGET_DIR:
+        required: true
+        type: string
     secrets:
       SQ_URL:
         required: true
@@ -16,10 +20,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: SonarQube Scan
+      - name: Validate TARGET_DIR
+        shell: bash
         run: |
+          set -euo pipefail
+          if [ ! -d "${{ inputs.TARGET_DIR }}" ]; then
+            echo "ERROR: TARGET_DIR '${{ inputs.TARGET_DIR }}' não existe no repo."
+            ls -la
+            exit 1
+          fi
+
+          if [ ! -f "${{ inputs.TARGET_DIR }}/sonar-project.properties" ]; then
+            echo "ERROR: Não encontrei '${{ inputs.TARGET_DIR }}/sonar-project.properties'."
+            exit 1
+          fi
+
+      - name: SonarQube Scan (monorepo aware + SCM)
+        shell: bash
+        run: |
+          set -euo pipefail
           docker run --rm \
             -e SONAR_HOST_URL="${{ secrets.SQ_URL }}" \
             -e SONAR_TOKEN="${{ secrets.SQ_TOKEN }}" \
-            -v "$PWD/dirty-python-app:/usr/src" \
+            -v "$PWD:/workspace" \
+            -w "/workspace/${{ inputs.TARGET_DIR }}" \
             sonarsource/sonar-scanner-cli
