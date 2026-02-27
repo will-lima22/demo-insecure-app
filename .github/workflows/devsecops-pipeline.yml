@@ -6,6 +6,68 @@ on:
   workflow_dispatch:
 
 jobs:
+  # 0) Detectar quais projetos mudaram (monorepo-aware)
+  detect-projects:
+    runs-on: ubuntu-latest
+    outputs:
+      projects_json: ${{ steps.set-matrix.outputs.projects_json }}
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed projects (folders with sonar-project.properties)
+        id: set-matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # workflow_dispatch: não tem range confiável -> roda todos projetos encontrados
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PROJECTS=$(find . -maxdepth 2 -type f -name "sonar-project.properties" \
+              | sed 's|^\./||' \
+              | awk -F/ '{print $1}' \
+              | sort -u)
+
+            JSON=$(printf '%s\n' "$PROJECTS" | python -c 'import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+            echo "projects_json=$JSON" >> "$GITHUB_OUTPUT"
+            echo "Detected projects (dispatch): $JSON"
+            exit 0
+          fi
+
+          # push: calcula diff before..sha
+          BASE="${{ github.event.before }}"
+          HEAD="${{ github.sha }}"
+          echo "Diff range: $BASE..$HEAD"
+
+          CHANGED_FILES=$(git diff --name-only "$BASE..$HEAD" || true)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo 'projects_json=[]' >> "$GITHUB_OUTPUT"
+            echo "No changed files."
+            exit 0
+          fi
+
+          PROJECTS=$(
+            while read -r f; do
+              p="${f%%/*}"
+              if [ -f "$p/sonar-project.properties" ]; then
+                echo "$p"
+              fi
+            done <<< "$CHANGED_FILES" | sort -u
+          )
+
+          if [ -z "$PROJECTS" ]; then
+            echo 'projects_json=[]' >> "$GITHUB_OUTPUT"
+            echo "No projects detected (no folder with sonar-project.properties changed)."
+          else
+            JSON=$(printf '%s\n' "$PROJECTS" | python -c 'import sys,json; print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+            echo "projects_json=$JSON" >> "$GITHUB_OUTPUT"
+            echo "Detected projects: $JSON"
+          fi
+
+  # 1) Secret scanning (1x por repo)
   secrets-trufflehog:
     uses: ./.github/workflows/secret-scan-trufflehog.yml
     secrets:
@@ -15,7 +77,9 @@ jobs:
     with:
       DD_PRODUCT_NAME: ${{ github.event.repository.name }}
       DD_ENGAGEMENT_NAME: ci-${{ github.event.repository.name }}
+    needs: [detect-projects]
 
+  # 2) SCA Trivy FS (1x por repo)
   sca-trivyfs:
     uses: ./.github/workflows/sca-trivyfs.yml
     secrets:
@@ -27,7 +91,15 @@ jobs:
       DD_ENGAGEMENT_NAME: ci-${{ github.event.repository.name }}
     needs: [secrets-trufflehog]
 
+  # 3) SCA pip-audit (por projeto detectado)
   sca-pip-audit:
+    needs: [sca-trivyfs, detect-projects]
+    if: ${{ needs.detect-projects.outputs.projects_json != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.detect-projects.outputs.projects_json) }}
+
     uses: ./.github/workflows/sca-pip-audit.yml
     secrets:
       DD_URL: ${{ secrets.DD_URL }}
@@ -36,11 +108,19 @@ jobs:
     with:
       DD_PRODUCT_NAME: ${{ github.event.repository.name }}
       DD_ENGAGEMENT_NAME: ci-${{ github.event.repository.name }}
-      REQUIREMENTS_FILE: dirty-python-app/requirements.txt
+      # aqui fica dinâmico (sem hardcode)
+      REQUIREMENTS_FILE: ${{ matrix.project }}/requirements.txt
       PYTHON_VERSION: "3.12"
-    needs: [sca-trivyfs]
 
+  # 4) SAST Semgrep (por projeto detectado)
   sast-semgrep:
+    needs: [sca-pip-audit, detect-projects]
+    if: ${{ needs.detect-projects.outputs.projects_json != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.detect-projects.outputs.projects_json) }}
+
     uses: ./.github/workflows/sast-semgrep.yml
     secrets:
       DD_URL: ${{ secrets.DD_URL }}
@@ -49,13 +129,22 @@ jobs:
     with:
       DD_PRODUCT_NAME: ${{ github.event.repository.name }}
       DD_ENGAGEMENT_NAME: ci-${{ github.event.repository.name }}
-      TARGET_PATH: dirty-python-app
+      # aqui fica dinâmico (sem hardcode)
+      TARGET_DIR: ${{ matrix.project }}
       SEMGREP_CONFIG: p/ci
-    needs: [sca-pip-audit]
 
+  # 5) SAST SonarQube (por projeto detectado)
   sast-sonarqube:
+    needs: [sast-semgrep, detect-projects]
+    if: ${{ needs.detect-projects.outputs.projects_json != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.detect-projects.outputs.projects_json) }}
+
     uses: ./.github/workflows/sast-sonarqube.yml
     secrets:
       SQ_URL: ${{ secrets.SQ_URL }}
       SQ_TOKEN: ${{ secrets.SQ_TOKEN }}
-    needs: [sast-semgrep]
+    with:
+      TARGET_DIR: ${{ matrix.project }}
