@@ -150,3 +150,5 @@ Le tableau suivant résume les corrections apportées au code pour atténuer les
 | Énumération d'Utilisateurs  | `/get_users`         | `curl http://adresse_ip:8081/get_users?hostname=google.com; ls /home` | Gérez les accès aux informations d'utilisateur de manière stricte. |
 
 # lab touch 02/26/2026 21:40:49
+
+# lab touch 02/26/2026 21:52:36
