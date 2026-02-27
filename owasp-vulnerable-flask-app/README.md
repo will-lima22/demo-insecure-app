@@ -148,3 +148,5 @@ Le tableau suivant résume les corrections apportées au code pour atténuer les
 | Injection de Formulaire     | `/login`             | `curl -X GET "http://adresse_ip:8081/login?username=malicious&password=' OR '1'='1"` | Validez et échappez les données du formulaire avant de les utiliser. |
 | Énumération de Fichiers     | `/get_log/`          | `curl http://adresse_ip:8081/get_log/../../../etc/`          | Gérez les accès aux fichiers de manière stricte et contrôlée. |
 | Énumération d'Utilisateurs  | `/get_users`         | `curl http://adresse_ip:8081/get_users?hostname=google.com; ls /home` | Gérez les accès aux informations d'utilisateur de manière stricte. |
+
+# lab touch 02/26/2026 21:40:49
